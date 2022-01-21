@@ -1,5 +1,7 @@
 #include <Arduino.h>
 #include <Arduino_LSM6DS3.h>
+#include <SNU.h>
+#include "music.h"
 
 float calibratieZ;
 float calibratieX;
@@ -40,8 +42,9 @@ void sittingEntry();
 
 
 void setup() {
+  pinMode(buzzer, OUTPUT);
   Serial.begin(115200);
-  while (!Serial);
+  // while (!Serial);
   if (!IMU.begin()) {
     Serial.println("Failed to initialize IMU!");
   }
@@ -49,22 +52,17 @@ void setup() {
   vermenigvuldigingswaarde = 200;
   drempelwaarde = 5;
 
-
   calibratie();
-
-  Serial.print("CALIBRATIE WAARDE");
-  Serial.print(calibratieX);
-  Serial.print('\t');
-  Serial.print(calibratieY);
-  Serial.print('\t');
-  Serial.println(calibratieZ);
+  delay(1000);
+  tone(buzzer, 1000, 200);
+  delay(500);
+  tone(buzzer, 1000, 200);
   delay(100);
 }
 
 void loop() {
   getValues();
-
-    switch(state) 
+  switch(state) 
   {
   case REST:
     digitalWrite(13, HIGH);
@@ -75,28 +73,21 @@ void loop() {
       digitalWrite(13, LOW);
       digitalWrite(12, HIGH);
       state = SITTING;
+      // Serial.println("Rest --> Sitting");
     }
     break;
   case SITTING:
-    sittingEntry();
-    Serial.print(X);
-    Serial.print(" ");
-    Serial.print(Y);
-    Serial.print(" ");
-    Serial.println(Z);
-    if (!checkThreshold() && millis() >= wachtTijd + 6000) {
+    if (!checkThreshold() && millis() >= wachtTijd + 45000) {
       digitalWrite(13, HIGH);
       digitalWrite(12, LOW);
       state = REST;
-      Serial.println("Sitting --> Rest");
-      calibratie();
+      // Serial.println("Sitting --> Rest");
     }
-    if(checkThreshold() && millis() >= zitTijd + 12000) {
+    if(checkThreshold() && millis() >= zitTijd + 1800000) {
       digitalWrite(11, HIGH);
       digitalWrite(12, LOW);
       state = PROMPTING;
-      Serial.println("Sitting --> Prompting");
-      calibratie();
+      // Serial.println("Sitting --> Prompting");
     }
     break;
   case PROMPTING:
@@ -105,7 +96,16 @@ void loop() {
     digitalWrite(13, HIGH);
     Serial.println("PROMPTING:: Het is tijd om op te staan");
     semafoor = !semafoor;
-    calibratie();
+    zitTijd = millis();
+    wachtTijd = millis();
+    tone(buzzer, 1000, 200);
+    delay(500);
+    tone(buzzer, 1000, 200);
+    delay(500);
+    tone(buzzer, 1000, 200);
+    delay(500);
+    tone(buzzer, 1000, 200);
+    // music();
     delay(10000);
     state = REST;
     break;
@@ -118,15 +118,14 @@ void loop() {
 
 bool checkThreshold() 
 {
-  if (Z > (calibratieZ + drempelwaarde) || Z < (calibratieZ - drempelwaarde) 
-  || X > calibratieX + drempelwaarde || X < calibratieX - drempelwaarde 
-  || Y > calibratieY + drempelwaarde || Y < calibratieY - drempelwaarde) {
+  if (abs(X - calibratieX) > drempelwaarde || abs(Y - calibratieY) > drempelwaarde || abs(Z - calibratieZ) > drempelwaarde) {
     return true;
   }
   return false;
 }
 
 void calibratie() {
+  tone(buzzer, 1000, 300);
   calibratieX = 0;
   calibratieY = 0;
   calibratieZ = 0;
@@ -142,13 +141,11 @@ void calibratie() {
     calibratieX += X;
     calibratieY += Y;
     calibratieZ += Z;
+    delay(250);
   };
-  Serial.print(maxRuisZ);
-  Serial.println(minRuisZ);
   calibratieX = calibratieX / 50;
   calibratieY = calibratieY / 50;
   calibratieZ = calibratieZ / 50;
-  
 }
 
 void getValues() {
@@ -157,13 +154,18 @@ void getValues() {
     X = X * vermenigvuldigingswaarde;
     Y = Y * vermenigvuldigingswaarde;
     Z = Z * vermenigvuldigingswaarde;
-    
-    Serial.print(X);
-    Serial.print('\t');
-    Serial.print(Y);
-    Serial.print('\t');
-    Serial.println(Z);
   }
+  Serial.print(X);
+  Serial.print(" ");
+  Serial.print(Y);
+  Serial.print(" ");
+  Serial.print(Z);
+  Serial.print(" ");
+  Serial.print(calibratieZ);
+  Serial.print(" ");
+  Serial.println(state);
+
+
 }
 
 void sittingEntry() {
@@ -175,9 +177,7 @@ void sittingEntry() {
   }
   if(checkThreshold()) {
     wachtTijd = millis();
-    calibratie();
   } 
   if (!checkThreshold()) {
-    calibratie();
   }
 }
