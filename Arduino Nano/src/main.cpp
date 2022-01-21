@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <Arduino_LSM6DS3.h>
 #include <SNU.h>
-#include "music.h"
+// #include "music.h"
 
 float calibratieZ;
 float calibratieX;
@@ -11,6 +11,8 @@ unsigned long stopTijd;
 unsigned long wachtTijd;
 unsigned long zitTijd;
 bool semafoor = false;
+int buzzer = 3;
+String message;
 
 float X, Y, Z; //metingen op x-, y- en z-as
 
@@ -39,10 +41,14 @@ void calibratie();
 void getValues();
 bool checkThreshold();
 void sittingEntry();
-
+void readtextfromkeyboard();
 
 void setup() {
   pinMode(buzzer, OUTPUT);
+  pinMode(4, OUTPUT);
+  pinMode(5, OUTPUT);
+  pinMode(6, OUTPUT);
+
   Serial.begin(115200);
   // while (!Serial);
   if (!IMU.begin()) {
@@ -62,38 +68,56 @@ void setup() {
 
 void loop() {
   getValues();
+
+  readtextfromkeyboard();
+  if(message == "rest" || message == "r" || message == "R" || message == "REST"){
+    state = REST;
+    Serial.println("state switched to REST");
+  }
+  else if(message == "sitting" || message == "s" || message == "S" || message == "SITTING"){
+    state = SITTING;
+    Serial.println("state switched to SITTING");
+  }
+  else if(message == "prompting" || message == "p" || message == "P" || message == "PROMPTING"){
+    state = PROMPTING;
+    Serial.println("state switched to PROMPTING");
+  } else if (message != ""){
+    Serial.println("We don't recognize this command please check for spelling errors");
+  }
+  message = "";
+
   switch(state) 
   {
   case REST:
-    digitalWrite(13, HIGH);
+    digitalWrite(6, HIGH);
+    digitalWrite(5, LOW);
+    digitalWrite(4, LOW);
     stopTijd = millis();
     wachtTijd = millis();
     zitTijd = millis();
     if(checkThreshold()) {
-      digitalWrite(13, LOW);
-      digitalWrite(12, HIGH);
       state = SITTING;
       // Serial.println("Rest --> Sitting");
     }
     break;
   case SITTING:
+    digitalWrite(6, LOW);
+    digitalWrite(5, HIGH);
+    digitalWrite(4, LOW);
     if (!checkThreshold() && millis() >= wachtTijd + 45000) {
-      digitalWrite(13, HIGH);
-      digitalWrite(12, LOW);
       state = REST;
       // Serial.println("Sitting --> Rest");
     }
     if(checkThreshold() && millis() >= zitTijd + 1800000) {
-      digitalWrite(11, HIGH);
-      digitalWrite(12, LOW);
       state = PROMPTING;
       // Serial.println("Sitting --> Prompting");
     }
     break;
   case PROMPTING:
     // prompt
-    digitalWrite(11, LOW);
-    digitalWrite(13, HIGH);
+    digitalWrite(6, LOW);
+    digitalWrite(5, LOW);
+    digitalWrite(4, HIGH);
     Serial.println("PROMPTING:: Het is tijd om op te staan");
     semafoor = !semafoor;
     zitTijd = millis();
@@ -164,8 +188,6 @@ void getValues() {
   Serial.print(calibratieZ);
   Serial.print(" ");
   Serial.println(state);
-
-
 }
 
 void sittingEntry() {
@@ -179,5 +201,22 @@ void sittingEntry() {
     wachtTijd = millis();
   } 
   if (!checkThreshold()) {
+  }
+}
+
+void readtextfromkeyboard() {
+ // Read serial input:
+  String inString="";
+  while (Serial.available() > 0) {
+    int inChar = Serial.read();
+    // if you get a newline, print the string, then the string's value:
+    if (inChar == '\n' && (inString.length()) > 0) {
+      message = inString;
+      tone(3,1000,200);
+    }
+    else {
+      inString += (char)inChar;
+      delayMicroseconds(600);
+    }
   }
 }
