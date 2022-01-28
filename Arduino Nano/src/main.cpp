@@ -10,6 +10,7 @@ unsigned long startTijd;
 unsigned long stopTijd;
 unsigned long wachtTijd;
 unsigned long zitTijd;
+unsigned long time;
 bool semafoor = false;
 int buzzer = 3;
 String message;
@@ -42,6 +43,7 @@ void getValues();
 bool checkThreshold();
 void sittingEntry();
 void readtextfromkeyboard();
+void getThresholdStatus();
 
 void setup() {
   pinMode(buzzer, OUTPUT);
@@ -56,18 +58,19 @@ void setup() {
   }
 
   vermenigvuldigingswaarde = 200;
-  drempelwaarde = 5;
+  drempelwaarde = 3;
 
   calibratie();
   delay(1000);
-  tone(buzzer, 1000, 200);
+  tone(buzzer, 2900, 200);
   delay(500);
-  tone(buzzer, 1000, 200);
+  tone(buzzer, 2900, 200);
   delay(100);
 }
 
 void loop() {
   getValues();
+  getThresholdStatus();
 
   readtextfromkeyboard();
   if(message == "rest" || message == "r" || message == "R" || message == "REST"){
@@ -95,22 +98,29 @@ void loop() {
     stopTijd = millis();
     wachtTijd = millis();
     zitTijd = millis();
+    time = millis();
     if(checkThreshold()) {
       state = SITTING;
-      // Serial.println("Rest --> Sitting");
+      if (semafoor) {
+        tone(buzzer, 2900, 200);
+        delay(500);
+        tone(buzzer, 2900, 200);
+      }
     }
     break;
   case SITTING:
+    sittingEntry();
     digitalWrite(6, LOW);
     digitalWrite(5, HIGH);
     digitalWrite(4, LOW);
+    if(checkThreshold()) {
+      wachtTijd = millis();
+    }
     if (!checkThreshold() && millis() >= wachtTijd + 45000) {
       state = REST;
-      // Serial.println("Sitting --> Rest");
     }
     if(checkThreshold() && millis() >= zitTijd + 1800000) {
       state = PROMPTING;
-      // Serial.println("Sitting --> Prompting");
     }
     break;
   case PROMPTING:
@@ -122,13 +132,13 @@ void loop() {
     semafoor = !semafoor;
     zitTijd = millis();
     wachtTijd = millis();
-    tone(buzzer, 1000, 200);
+    tone(buzzer, 2900, 200);
     delay(500);
-    tone(buzzer, 1000, 200);
+    tone(buzzer, 2900, 200);
     delay(500);
-    tone(buzzer, 1000, 200);
+    tone(buzzer, 2900, 200);
     delay(500);
-    tone(buzzer, 1000, 200);
+    tone(buzzer, 2900, 200);
     // music();
     delay(10000);
     state = REST;
@@ -149,7 +159,7 @@ bool checkThreshold()
 }
 
 void calibratie() {
-  tone(buzzer, 1000, 300);
+  tone(buzzer, 2900, 300);
   calibratieX = 0;
   calibratieY = 0;
   calibratieZ = 0;
@@ -194,13 +204,7 @@ void sittingEntry() {
   if(!semafoor) {
     zitTijd = millis();
     wachtTijd = millis();
-    Serial.print("SITTING ENTRY ");
     semafoor = !semafoor;
-  }
-  if(checkThreshold()) {
-    wachtTijd = millis();
-  } 
-  if (!checkThreshold()) {
   }
 }
 
@@ -219,4 +223,15 @@ void readtextfromkeyboard() {
       delayMicroseconds(600);
     }
   }
+}
+
+void getThresholdStatus() {
+  stopTijd = millis();
+  if(checkThreshold()) {
+    time = millis();
+    Serial.print("Above threshold ");
+  } else {
+    Serial.print("Under threshold ");
+  }
+  Serial.println((stopTijd - time) / 1000);
 }
