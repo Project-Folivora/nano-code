@@ -59,6 +59,7 @@ void setup() {
 
   vermenigvuldigingswaarde = 200;
   drempelwaarde = 3;
+  semafoor = 0;
 
   calibratie();
   delay(1000);
@@ -129,7 +130,7 @@ void loop() {
     digitalWrite(5, LOW);
     digitalWrite(4, HIGH);
     Serial.println("PROMPTING:: Het is tijd om op te staan");
-    semafoor = !semafoor;
+    semafoor = 0;
     zitTijd = millis();
     wachtTijd = millis();
     tone(buzzer, 2900, 200);
