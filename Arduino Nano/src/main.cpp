@@ -102,11 +102,6 @@ void loop() {
     time = millis();
     if(checkThreshold()) {
       state = SITTING;
-      if (semafoor) {
-        tone(buzzer, 2900, 200);
-        delay(500);
-        tone(buzzer, 2900, 200);
-      }
     }
     break;
   case SITTING:
