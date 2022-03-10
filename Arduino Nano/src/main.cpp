@@ -18,6 +18,7 @@ String message;
 float X, Y, Z; //metingen op x-, y- en z-as
 
 float drempelwaarde;
+float majorDrempelwaarde;
 float vermenigvuldigingswaarde;
 
 enum States{
@@ -44,6 +45,7 @@ bool checkThreshold();
 void sittingEntry();
 void readtextfromkeyboard();
 void getThresholdStatus();
+bool checkMajorEventThreshold();
 
 void setup() {
   pinMode(buzzer, OUTPUT);
@@ -58,7 +60,8 @@ void setup() {
   }
 
   vermenigvuldigingswaarde = 200;
-  drempelwaarde = 3;
+  drempelwaarde = 5;
+  majorDrempelwaarde = 20;
   semafoor = 0;
 
   calibratie();
@@ -90,6 +93,10 @@ void loop() {
   }
   message = "";
 
+  if(checkMajorEventThreshold()) {
+    Serial.println("Major Event");
+  }
+
   switch(state) 
   {
   case REST:
@@ -109,10 +116,10 @@ void loop() {
     digitalWrite(6, LOW);
     digitalWrite(5, HIGH);
     digitalWrite(4, LOW);
-    if(checkThreshold()) {
+    if(checkMajorEventThreshold() && !checkThreshold()) {
       wachtTijd = millis();
     }
-    if (!checkThreshold() && millis() >= wachtTijd + 45000) {
+    if (millis() >= wachtTijd + 10000) {
       state = REST;
     }
     if(checkThreshold() && millis() >= zitTijd + 1800000) {
@@ -149,6 +156,14 @@ void loop() {
 bool checkThreshold() 
 {
   if (abs(X - calibratieX) > drempelwaarde || abs(Y - calibratieY) > drempelwaarde || abs(Z - calibratieZ) > drempelwaarde) {
+    return true;
+  }
+  return false;
+}
+
+bool checkMajorEventThreshold() 
+{
+  if (abs(X - calibratieX) > majorDrempelwaarde || abs(Y - calibratieY) > majorDrempelwaarde || abs(Z - calibratieZ) > majorDrempelwaarde) {
     return true;
   }
   return false;
