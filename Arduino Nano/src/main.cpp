@@ -12,6 +12,8 @@ unsigned long wachtTijd;
 unsigned long zitTijd;
 unsigned long time;
 bool semafoor = false;
+bool majorEventSemafoor = false;
+
 int buzzer = 3;
 String message;
 
@@ -20,6 +22,9 @@ float X, Y, Z; //metingen op x-, y- en z-as
 float drempelwaarde;
 float majorDrempelwaarde;
 float vermenigvuldigingswaarde;
+int delayValue;
+
+bool majorEventDetected;
 
 enum States{
   // Als de metingen binnen de threshold blijft zitten, blijft het in REST.
@@ -31,6 +36,8 @@ enum States{
   // Wanneer SITTING wordt onderbroken voor x aantal sec dan wordt Semafoor False en gaat de state naar REST. 
   // Wanneer SITTING al 30 minuten actief is gaat het naar PROMPTING.
   SITTING,
+  //wanneer er in sitting een "Major Event" word gedetecteerd gaan we hier kijken of de gebruiker is opgestaan.
+  STANDING,
   // Bij PROMPTING stuur een bericht naar de user, bij reactie zet Semafoor naar False en reset Timer.
   PROMPTING
 };
@@ -63,6 +70,8 @@ void setup() {
   drempelwaarde = 5;
   majorDrempelwaarde = 20;
   semafoor = 0;
+  majorEventSemafoor = 0;
+  majorEventDetected = false;
 
   calibratie();
   delay(1000);
@@ -92,14 +101,11 @@ void loop() {
     Serial.println("We don't recognize this command please check for spelling errors");
   }
   message = "";
-
-  if(checkMajorEventThreshold()) {
-    Serial.println("Major Event");
-  }
-
   switch(state) 
   {
   case REST:
+    majorEventSemafoor = false;
+    delayValue = 250;
     digitalWrite(6, HIGH);
     digitalWrite(5, LOW);
     digitalWrite(4, LOW);
@@ -116,15 +122,32 @@ void loop() {
     digitalWrite(6, LOW);
     digitalWrite(5, HIGH);
     digitalWrite(4, LOW);
-    if(checkMajorEventThreshold() && !checkThreshold()) {
+
+    if(checkMajorEventThreshold() && checkThreshold()) {
       wachtTijd = millis();
     }
-    if (millis() >= wachtTijd + 10000) {
-      state = REST;
+    if(checkMajorEventThreshold()) {
+      state = STANDING;
+      delayValue = 500;
     }
     if(checkThreshold() && millis() >= zitTijd + 1800000) {
       state = PROMPTING;
     }
+    break;
+  case STANDING:
+  if(!majorEventSemafoor) {
+    wachtTijd = millis();
+    majorEventSemafoor = 1;
+  }
+  if ((abs(X - calibratieX) < 3 && abs(Y - calibratieY) < 3 && abs(Z - calibratieZ) < 3) && millis() >= wachtTijd + 10000) {
+    Serial.println("standing -> rest");
+    state = REST;
+  }
+  if (checkThreshold()) {
+    Serial.println("Standing -> sitting");
+    state = SITTING;
+    delayValue = 250;
+  }
     break;
   case PROMPTING:
     // prompt
@@ -133,6 +156,7 @@ void loop() {
     digitalWrite(4, HIGH);
     Serial.println("PROMPTING:: Het is tijd om op te staan");
     semafoor = 0;
+    majorEventSemafoor = 0;
     zitTijd = millis();
     wachtTijd = millis();
     tone(buzzer, 2900, 200);
@@ -150,7 +174,7 @@ void loop() {
     // exception block
     break;
   }
-  delay(250);
+  delay(delayValue);
 }
 
 bool checkThreshold() 
@@ -200,14 +224,19 @@ void getValues() {
     Y = Y * vermenigvuldigingswaarde;
     Z = Z * vermenigvuldigingswaarde;
   }
+  Serial.print("Meetwaarde: ");
   Serial.print(X);
   Serial.print(" ");
   Serial.print(Y);
   Serial.print(" ");
-  Serial.print(Z);
+  Serial.println(Z);
+  Serial.print("Calibratiewaarde: ");
+  Serial.print(calibratieX);
   Serial.print(" ");
-  Serial.print(calibratieZ);
+  Serial.print(calibratieY);
   Serial.print(" ");
+  Serial.println(calibratieZ);
+  Serial.print("State: ");
   Serial.println(state);
 }
 
@@ -240,9 +269,10 @@ void getThresholdStatus() {
   stopTijd = millis();
   if(checkThreshold()) {
     time = millis();
-    Serial.print("Above threshold ");
+    Serial.print("Above threshold: ");
   } else {
-    Serial.print("Under threshold ");
+    Serial.print("Under threshold: ");
   }
-  Serial.println((stopTijd - time) / 1000);
+  Serial.println((stopTijd - wachtTijd) / 1000);
+  Serial.println("------------------------------------------------------");
 }
