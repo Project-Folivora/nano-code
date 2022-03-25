@@ -25,7 +25,6 @@ float vermenigvuldigingswaarde;
 int delayValue;
 
 bool majorEventDetected;
-
 enum States{
   // Als de metingen binnen de threshold blijft zitten, blijft het in REST.
   // Houdt de tijd op 30 minuten.
@@ -53,6 +52,7 @@ void sittingEntry();
 void readtextfromkeyboard();
 void getThresholdStatus();
 bool checkMajorEventThreshold();
+bool checkMeetwaardeProximity();
 
 void setup() {
   pinMode(buzzer, OUTPUT);
@@ -68,7 +68,7 @@ void setup() {
 
   vermenigvuldigingswaarde = 200;
   drempelwaarde = 5;
-  majorDrempelwaarde = 20;
+  majorDrempelwaarde = 15;
   semafoor = 0;
   majorEventSemafoor = 0;
   majorEventDetected = false;
@@ -133,20 +133,25 @@ void loop() {
     if(checkThreshold() && millis() >= zitTijd + 1800000) {
       state = PROMPTING;
     }
+    if (checkMeetwaardeProximity() && millis() >= wachtTijd + 30000) {
+      state = REST;
+    }
     break;
   case STANDING:
   if(!majorEventSemafoor) {
     wachtTijd = millis();
     majorEventSemafoor = 1;
   }
-  if ((abs(X - calibratieX) < 3 && abs(Y - calibratieY) < 3 && abs(Z - calibratieZ) < 3) && millis() >= wachtTijd + 10000) {
+    delay(10000);
+
+
+  if (checkMeetwaardeProximity() && millis() >= wachtTijd + 10000) {
     Serial.println("standing -> rest");
     state = REST;
   }
   if (checkThreshold()) {
     Serial.println("Standing -> sitting");
     state = SITTING;
-    delayValue = 250;
   }
     break;
   case PROMPTING:
@@ -188,6 +193,14 @@ bool checkThreshold()
 bool checkMajorEventThreshold() 
 {
   if (abs(X - calibratieX) > majorDrempelwaarde || abs(Y - calibratieY) > majorDrempelwaarde || abs(Z - calibratieZ) > majorDrempelwaarde) {
+    return true;
+  }
+  return false;
+}
+
+bool checkMeetwaardeProximity() 
+{
+  if ((abs(X - calibratieX) < 3 && abs(Y - calibratieY) < 3 && abs(Z - calibratieZ) < 3) && millis() >= wachtTijd + 10000) {
     return true;
   }
   return false;
