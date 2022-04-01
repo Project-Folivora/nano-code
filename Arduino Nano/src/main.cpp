@@ -67,7 +67,7 @@ void setup() {
   }
 
   vermenigvuldigingswaarde = 200;
-  drempelwaarde = 5;
+  drempelwaarde = 3;
   majorDrempelwaarde = 15;
   semafoor = 0;
   majorEventSemafoor = 0;
@@ -133,7 +133,7 @@ void loop() {
     if(checkThreshold() && millis() >= zitTijd + 1800000) {
       state = PROMPTING;
     }
-    if (checkMeetwaardeProximity() && millis() >= wachtTijd + 30000) {
+    if (checkMeetwaardeProximity() && millis() >= wachtTijd + 300000) {
       state = REST;
     }
     break;
@@ -142,8 +142,7 @@ void loop() {
     wachtTijd = millis();
     majorEventSemafoor = 1;
   }
-    delay(10000);
-
+  delay(10000);
 
   if (checkMeetwaardeProximity() && millis() >= wachtTijd + 10000) {
     Serial.println("standing -> rest");
@@ -200,7 +199,7 @@ bool checkMajorEventThreshold()
 
 bool checkMeetwaardeProximity() 
 {
-  if ((abs(X - calibratieX) < 3 && abs(Y - calibratieY) < 3 && abs(Z - calibratieZ) < 3) && millis() >= wachtTijd + 10000) {
+  if ((abs(X - calibratieX) < 2 && abs(Y - calibratieY) < 2 && abs(Z - calibratieZ) < 2) && millis() >= wachtTijd + 10000) {
     return true;
   }
   return false;
@@ -249,6 +248,12 @@ void getValues() {
   Serial.print(calibratieY);
   Serial.print(" ");
   Serial.println(calibratieZ);
+  Serial.print("Verschil: ");
+  Serial.print(abs(calibratieX - X));
+  Serial.print(" ");
+  Serial.print(abs(calibratieY - Y));
+  Serial.print(" ");
+  Serial.println(abs(calibratieZ - Z));
   Serial.print("State: ");
   Serial.println(state);
 }
