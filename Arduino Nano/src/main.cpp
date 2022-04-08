@@ -104,7 +104,8 @@ void loop() {
   switch(state) 
   {
   case REST:
-    majorEventSemafoor = false;
+    semafoor = 0;
+    majorEventSemafoor = 0;
     delayValue = 250;
     digitalWrite(6, HIGH);
     digitalWrite(5, LOW);
@@ -133,7 +134,7 @@ void loop() {
     if(checkThreshold() && millis() >= zitTijd + 1800000) {
       state = PROMPTING;
     }
-    if (checkMeetwaardeProximity() && millis() >= wachtTijd + 300000) {
+    if (checkMeetwaardeProximity() && millis() >= wachtTijd + 30000) {
       state = REST;
     }
     break;
