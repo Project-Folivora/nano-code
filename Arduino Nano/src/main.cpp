@@ -104,6 +104,7 @@ void loop() {
   switch(state) 
   {
   case REST:
+  
     semafoor = 0;
     majorEventSemafoor = 0;
     delayValue = 250;
@@ -135,6 +136,9 @@ void loop() {
       state = PROMPTING;
     }
     if (checkMeetwaardeProximity() && millis() >= wachtTijd + 30000) {
+      tone(buzzer, 2900, 200);
+      delay(500);
+      tone(buzzer, 2900, 200);    
       state = REST;
     }
     break;
@@ -288,10 +292,13 @@ void getThresholdStatus() {
   stopTijd = millis();
   if(checkThreshold()) {
     time = millis();
-    Serial.print("Above threshold: ");
+    Serial.println("Above threshold");
   } else {
-    Serial.print("Under threshold: ");
+    Serial.println("Under threshold");
   }
+  Serial.print("Wachttijd: ");
   Serial.println((stopTijd - wachtTijd) / 1000);
+  Serial.print("Zittijd:");
+  Serial.println((stopTijd - zitTijd) / 1000);
   Serial.println("------------------------------------------------------");
 }
