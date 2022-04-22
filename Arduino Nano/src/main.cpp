@@ -68,7 +68,7 @@ void setup() {
 
   vermenigvuldigingswaarde = 200;
   drempelwaarde = 3;
-  majorDrempelwaarde = 15;
+  majorDrempelwaarde = 10;
   semafoor = 0;
   majorEventSemafoor = 0;
   majorEventDetected = false;
@@ -104,7 +104,6 @@ void loop() {
   switch(state) 
   {
   case REST:
-  
     semafoor = 0;
     majorEventSemafoor = 0;
     delayValue = 250;
@@ -135,12 +134,12 @@ void loop() {
     if(checkThreshold() && millis() >= zitTijd + 1800000) {
       state = PROMPTING;
     }
-    if (checkMeetwaardeProximity() && millis() >= wachtTijd + 30000) {
-      tone(buzzer, 2900, 200);
-      delay(500);
-      tone(buzzer, 2900, 200);    
-      state = REST;
-    }
+    // if (checkMeetwaardeProximity() && millis() >= wachtTijd + 30000) {
+    //   tone(buzzer, 2900, 200);
+    //   delay(500);
+    //   tone(buzzer, 2900, 200);    
+    //   state = REST;
+    // }
     break;
   case STANDING:
   if(!majorEventSemafoor) {
