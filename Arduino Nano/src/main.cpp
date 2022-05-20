@@ -8,6 +8,9 @@ bool majorEventSemafoor = false;
 float calibratieZ;
 float calibratieX;
 float calibratieY;
+float calibratieGyroscopeZ;
+float calibratieGyroscopeX;
+float calibratieGyroscopeY;
 unsigned long startTijd;
 unsigned long stopTijd;
 unsigned long wachtTijd;
@@ -17,6 +20,7 @@ String message;
 int buzzer = 3;
 
 float X, Y, Z; //metingen op x-, y- en z-as
+float gyroX, gyroY, gyroZ; // metingen op de x-, y- en z-as van de gyroscope
 
 float drempelwaarde;
 float majorDrempelwaarde;
@@ -60,15 +64,16 @@ void plotterDebugCommands();
 void restEntry();
 void calibratieNotificatie();
 void setupConfiguratie();
-void promptingNotificatie();
 void loopReset();
 void presentieGebruiker();
 void restExit();
 void promptingExit();
 void sittingExit();
 void checkStanding();
+void piepjesMaker(int aantal);
+void getGyroscopeValues();
 
-// --------------------Setup Configuration----------------------------------
+// ------------------------------Setup Configuration----------------------------------
 
 
 void setup() {
@@ -83,6 +88,7 @@ void setup() {
 
 void loop() {
   getValues();
+  getGyroscopeValues();
   getThresholdStatus();
   readtextfromkeyboard();
   plotterDebugCommands();
@@ -108,7 +114,6 @@ void loop() {
 
     break;
   case STANDING:
-
     standingEntry();
     presentieGebruiker();
 
@@ -117,7 +122,7 @@ void loop() {
 
     sensorLightPrompting();
     loopReset();
-    promptingNotificatie();
+    piepjesMaker(4);
     promptingExit();
 
     break;
@@ -153,7 +158,7 @@ bool checkMajorEventThreshold()
 // ?
 bool checkMeetwaardeProximity() 
 {
-  if ((abs(X - calibratieX) < 2 && abs(Y - calibratieY) < 2 && abs(Z - calibratieZ) < 2) && millis() >= wachtTijd + 10000) {
+  if (abs(X - calibratieX) < 1 && abs(Y - calibratieY) < 1 && abs(Z - calibratieZ) < 1) {
     return true;
   }
   return false;
@@ -213,6 +218,17 @@ void getValues() {
   Serial.print("State: ");
   Serial.println(state);
 }
+void getGyroscopeValues() {
+  if (IMU.gyroscopeAvailable()) {
+    IMU.readGyroscope(gyroX, gyroY, gyroZ);
+  }
+  Serial.print("Gyroscope Meetwaarde: ");
+  Serial.print(gyroX);
+  Serial.print(" ");
+  Serial.print(gyroY);
+  Serial.print(" ");
+  Serial.println(gyroZ);
+}
 
 // Checkt of de gebruiker voor het eerst is in een case cyclus zit.
 // Alle Entries zetten en/of resetten de semaforen om te checken voor first occurence.
@@ -222,22 +238,24 @@ void sittingEntry() {
     zitTijd = millis();
     wachtTijd = millis();
     semafoor = true;
+    piepjesMaker(2);
   }
   // tijd wordt gestart
   stopTijd = millis();
   wachtTijd = millis();
-  zitTijd = millis();
   time = millis();
 }
 void restEntry(){
   semafoor = 0;
   majorEventSemafoor = 0;
   delayValue = 250;
+  zitTijd = millis();
 }
 void standingEntry(){
   if(!majorEventSemafoor) {
     wachtTijd = millis();
     majorEventSemafoor = 1;
+    piepjesMaker(3);
   }
   // Deze delay zit erin om bewegingen DIRECT na de major Event te negeren.
   delay(10000);
@@ -270,7 +288,7 @@ void getThresholdStatus() {
   } else {
     Serial.print("Under threshold: ");
   }
-  Serial.println((stopTijd - wachtTijd) / 1000);
+  Serial.println((stopTijd - zitTijd) / 1000);
   Serial.println("------------------------------------------------------");
 }
 
@@ -341,17 +359,6 @@ void setupConfiguratie(){
   majorEventDetected = false;
 }
 
-// buzzer notificatie voor de gebruiker om op te staan.
-void promptingNotificatie(){
-  tone(buzzer, 2900, 200);
-  delay(500);
-  tone(buzzer, 2900, 200);
-  delay(500);
-  tone(buzzer, 2900, 200);
-  delay(500);
-  tone(buzzer, 2900, 200);
-}
-
 // Reset de cyclus door de semaforen en tijd te resetten.
 void loopReset(){
     Serial.println("PROMPTING:: Het is tijd om op te staan");
@@ -365,7 +372,7 @@ void loopReset(){
 // afhankelijk daarvan switched de state van STANDING naar REST of SITTING.
 void presentieGebruiker(){
   // Checkt of de gebruiker afwezig is na de majorEvent.
-  if (checkMeetwaardeProximity() && millis() >= wachtTijd + 10000) {
+  if (checkMeetwaardeProximity()) {
     Serial.println("standing -> rest");
     state = REST;
   }
@@ -390,7 +397,7 @@ void promptingExit(){
 }
 void sittingExit(){
   // Na 30 minuten gaat de state van 
-  if(checkThreshold() && millis() >= zitTijd + 1800000) {
+  if(millis() >= zitTijd + 1800000) {
     state = PROMPTING;
   }
 }
@@ -403,5 +410,13 @@ void checkStanding(){
   if(checkMajorEventThreshold()) {
     state = STANDING;
     delayValue = 500;
+  }
+}
+
+//buzzer functie
+void piepjesMaker(int aantal) {
+  for (int i = 0; i < aantal; i++) {
+    tone(buzzer, 2900, 200);
+    delay(500); 
   }
 }
