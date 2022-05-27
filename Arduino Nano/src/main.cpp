@@ -5,17 +5,19 @@
 
 bool semafoor = false;
 bool majorEventSemafoor = false;
+bool gyroDetected = false;
 float calibratieZ;
 float calibratieX;
 float calibratieY;
-float calibratieGyroscopeZ;
-float calibratieGyroscopeX;
-float calibratieGyroscopeY;
+float tempCalibratieX;
+float tempCalibratieY;
+float tempCalibratieZ;
 unsigned long startTijd;
 unsigned long stopTijd;
 unsigned long wachtTijd;
 unsigned long zitTijd;
 unsigned long time;
+unsigned long gyroTimer;
 String message;
 int buzzer = 3;
 
@@ -24,6 +26,7 @@ float gyroX, gyroY, gyroZ; // metingen op de x-, y- en z-as van de gyroscope
 
 float drempelwaarde;
 float majorDrempelwaarde;
+float gyroDrempelwaarde;
 float vermenigvuldigingswaarde;
 int delayValue;
 
@@ -51,6 +54,7 @@ States state = REST;
 bool checkThreshold();
 bool checkMajorEventThreshold();
 bool checkMeetwaardeProximity();
+void checkGyroThreshold();
 void calibratie();
 void getValues();
 void sittingEntry();
@@ -92,6 +96,7 @@ void loop() {
   getThresholdStatus();
   readtextfromkeyboard();
   plotterDebugCommands();
+  checkGyroThreshold();
  
   // ?
   message = "";
@@ -140,7 +145,7 @@ void loop() {
 // Checkt of de meetwaarde de drempelwaarde doorbreekt om van REST naar SITTING te gaan.
 bool checkThreshold() 
 {
-  if (abs(X - calibratieX) > drempelwaarde || abs(Y - calibratieY) > drempelwaarde || abs(Z - calibratieZ) > drempelwaarde) {
+  if (abs(X - tempCalibratieX) > drempelwaarde || abs(Y - tempCalibratieY) > drempelwaarde || abs(Z - tempCalibratieZ) > drempelwaarde) {
     return true;
   }
   return false;
@@ -158,11 +163,35 @@ bool checkMajorEventThreshold()
 // ?
 bool checkMeetwaardeProximity() 
 {
-  if (abs(X - calibratieX) < 1 && abs(Y - calibratieY) < 1 && abs(Z - calibratieZ) < 1) {
+  if (abs(X - tempCalibratieX) < 1 && abs(Y - tempCalibratieY) < 1 && abs(Z - tempCalibratieZ) < 1) {
     return true;
   }
   return false;
 }
+
+// !
+void checkGyroThreshold()
+{
+  if (abs(gyroX) > gyroDrempelwaarde || abs(gyroY) > gyroDrempelwaarde || abs(gyroZ) > gyroDrempelwaarde) {
+    gyroDetected = true;
+    gyroTimer = millis();
+  }
+  if (gyroDetected == true && millis() >= gyroTimer + 10000) {
+    gyroDetected = false;
+  }
+  if(checkMajorEventThreshold() && gyroDetected == true) {
+  tempCalibratieX = X;
+  tempCalibratieY = Y;
+  tempCalibratieZ = Z;
+  } else {
+  tempCalibratieX = calibratieX;
+  tempCalibratieY = calibratieY;
+  tempCalibratieZ = calibratieZ;
+  }
+  Serial.print("Gyro Detection:");
+  Serial.println(gyroDetected);
+}
+
 
 // Calibratie procedure van de sensor.
 void calibratie() {
@@ -237,6 +266,7 @@ void sittingEntry() {
   if(!semafoor) {
     zitTijd = millis();
     wachtTijd = millis();
+    gyroTimer = millis();
     semafoor = true;
     piepjesMaker(2);
   }
@@ -357,6 +387,7 @@ void setupConfiguratie(){
   semafoor = 0;
   majorEventSemafoor = 0;
   majorEventDetected = false;
+  gyroDrempelwaarde = 10;
 }
 
 // Reset de cyclus door de semaforen en tijd te resetten.
