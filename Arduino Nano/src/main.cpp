@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <SimpleKalmanFilter.h>
 #include <Arduino_LSM6DS3.h>
 #include <SNU.h>
 // #include "music.h"
@@ -43,6 +44,10 @@ enum States{
   // Bij PROMPTING stuur een bericht naar de user, bij reactie zet Semafoor naar False en reset Timer.
   PROMPTING
 };
+//Kalman Filter
+SimpleKalmanFilter simpleKalmanFilter(0.1, 1, 0.1);
+const long SERIAL_REFRESH_TIME = 100;
+long refresh_time;
 
 // --------------Function Declarations---------------------
 
@@ -72,6 +77,7 @@ void sittingExit();
 void checkStanding();
 void piepjesMaker(int aantal);
 void getGyroscopeValues();
+void kalmanWaardes();
 
 // ------------------------------Setup Configuration----------------------------------
 
@@ -92,6 +98,7 @@ void loop() {
   getThresholdStatus();
   readtextfromkeyboard();
   plotterDebugCommands();
+  kalmanWaardes();
  
   // ?
   message = "";
@@ -289,7 +296,6 @@ void getThresholdStatus() {
     Serial.print("Under threshold: ");
   }
   Serial.println((stopTijd - zitTijd) / 1000);
-  Serial.println("------------------------------------------------------");
 }
 
 // Deze lampen geven de STATES weer voor de gebruiker.
@@ -419,4 +425,11 @@ void piepjesMaker(int aantal) {
     tone(buzzer, 2900, 200);
     delay(500); 
   }
+}
+
+void kalmanWaardes() {
+  float estimated_value = simpleKalmanFilter.updateEstimate(Z);
+  Serial.print("Kalman Waardes: ");
+  Serial.println(estimated_value);
+  Serial.println("--------------------------------------");
 }
