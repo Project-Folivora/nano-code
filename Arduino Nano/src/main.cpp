@@ -30,6 +30,15 @@ float drempelwaarde;
 float majorDrempelwaarde;
 float vermenigvuldigingswaarde;
 int delayValue;
+float versnelling;
+
+float vtold;
+float vt;
+float vttotaal;
+
+float stold;
+float st;
+float stotaal;
 
 bool majorEventDetected;
 enum States{
@@ -211,7 +220,7 @@ void getValues() {
     ArrayXYZ[0] = X;
     ArrayXYZ[1] = Y;
     ArrayXYZ[2] = Z;
-    Serial.println(ArrayXYZ[vertical]);
+    // Serial.println(ArrayXYZ[vertical]);
     verticalWaarde = ArrayXYZ[vertical];
   }
   // Serial.print("Meetwaarde: ");
@@ -232,8 +241,8 @@ void getValues() {
   // Serial.print(abs(calibratieY - Y));
   // Serial.print(" ");
   // Serial.println(abs(calibratieZ - Z));
-  Serial.print("State: ");
-  Serial.println(state);
+  // Serial.print("State: ");
+  // Serial.println(state);
 }
 // void getGyroscopeValues() {
 //   if (IMU.gyroscopeAvailable()) {
@@ -447,10 +456,16 @@ void kalmanWaardes() {
 }
 
 void verplaatsingBerekenen() {
-float versnelling = (verticalWaarde - verticalCalibratie);
-float vt = 0 + (versnelling * 0.25);
-float verplaatsing = vt + 0.5 * (versnelling * 0.03125);
+versnelling = (verticalWaarde - verticalCalibratie);
 
-Serial.println(vt);
-Serial.println(verplaatsing);
+vtold = vt;
+vt = vtold + (versnelling * 0.25);
+vttotaal = vtold += vt;
+
+stold = st;
+st = (vtold * 0.25) + (versnelling * 0.03125);
+stotaal = stold += st;
+
+
+Serial.println(stotaal * 100);
 }
