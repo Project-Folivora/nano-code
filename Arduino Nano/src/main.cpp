@@ -45,7 +45,7 @@ enum States{
   PROMPTING
 };
 //Kalman Filter
-SimpleKalmanFilter simpleKalmanFilter(0.1, 1, 0.1);
+SimpleKalmanFilter simpleKalmanFilter(0.05, 1, 0.1);
 const long SERIAL_REFRESH_TIME = 100;
 long refresh_time;
 
@@ -204,37 +204,37 @@ void getValues() {
     Y = Y * vermenigvuldigingswaarde;
     Z = Z * vermenigvuldigingswaarde;
   }
-  Serial.print("Meetwaarde: ");
-  Serial.print(X);
-  Serial.print(" ");
-  Serial.print(Y);
-  Serial.print(" ");
-  Serial.println(Z);
-  Serial.print("Calibratiewaarde: ");
-  Serial.print(calibratieX);
-  Serial.print(" ");
-  Serial.print(calibratieY);
-  Serial.print(" ");
-  Serial.println(calibratieZ);
-  Serial.print("Verschil: ");
-  Serial.print(abs(calibratieX - X));
-  Serial.print(" ");
-  Serial.print(abs(calibratieY - Y));
-  Serial.print(" ");
-  Serial.println(abs(calibratieZ - Z));
-  Serial.print("State: ");
-  Serial.println(state);
+  // Serial.print("Meetwaarde: ");
+  // Serial.print(X);
+  // Serial.print(" ");
+  // Serial.print(Y);
+  // Serial.print(" ");
+  // Serial.println(Z);
+  // Serial.print("Calibratiewaarde: ");
+  // Serial.print(calibratieX);
+  // Serial.print(" ");
+  // Serial.print(calibratieY);
+  // Serial.print(" ");
+  // Serial.println(calibratieZ);
+  // Serial.print("Verschil: ");
+  // Serial.print(abs(calibratieX - X));
+  // Serial.print(" ");
+  // Serial.print(abs(calibratieY - Y));
+  // Serial.print(" ");
+  // Serial.println(abs(calibratieZ - Z));
+  // Serial.print("State: ");
+  // Serial.println(state);
 }
 void getGyroscopeValues() {
   if (IMU.gyroscopeAvailable()) {
     IMU.readGyroscope(gyroX, gyroY, gyroZ);
   }
-  Serial.print("Gyroscope Meetwaarde: ");
-  Serial.print(gyroX);
-  Serial.print(" ");
-  Serial.print(gyroY);
-  Serial.print(" ");
-  Serial.println(gyroZ);
+//   Serial.print("Gyroscope Meetwaarde: ");
+//   Serial.print(gyroX);
+//   Serial.print(" ");
+//   Serial.print(gyroY);
+//   Serial.print(" ");
+//   Serial.println(gyroZ);
 }
 
 // Checkt of de gebruiker voor het eerst is in een case cyclus zit.
@@ -289,13 +289,13 @@ void readtextfromkeyboard() {
 // Geeft de status van de sensor weer in de plotter.
 void getThresholdStatus() {
   stopTijd = millis();
-  if(checkThreshold()) {
-    time = millis();
-    Serial.print("Above threshold: ");
-  } else {
-    Serial.print("Under threshold: ");
-  }
-  Serial.println((stopTijd - zitTijd) / 1000);
+  // if(checkThreshold()) {
+  //   time = millis();
+  //   Serial.print("Above threshold: ");
+  // } else {
+  //   Serial.print("Under threshold: ");
+  // }
+  // Serial.println((stopTijd - zitTijd) / 1000);
 }
 
 // Deze lampen geven de STATES weer voor de gebruiker.
@@ -429,7 +429,9 @@ void piepjesMaker(int aantal) {
 
 void kalmanWaardes() {
   float estimated_value = simpleKalmanFilter.updateEstimate(Z);
-  Serial.print("Kalman Waardes: ");
-  Serial.println(estimated_value);
-  Serial.println("--------------------------------------");
+  // Serial.print("Kalman Waardes: ");
+  Serial.print(estimated_value);
+  Serial.print(",");
+  Serial.println(Z);
+  // Serial.println("--------------------------------------");
 }
