@@ -12,6 +12,7 @@ float calibratieY;
 float calibratieGyroscopeZ;
 float calibratieGyroscopeX;
 float calibratieGyroscopeY;
+float ArrayXYZ [3];
 unsigned long startTijd;
 unsigned long stopTijd;
 unsigned long wachtTijd;
@@ -22,7 +23,9 @@ int buzzer = 3;
 
 float X, Y, Z; //metingen op x-, y- en z-as
 float gyroX, gyroY, gyroZ; // metingen op de x-, y- en z-as van de gyroscope
-
+int vertical;
+float verticalWaarde;
+float verticalCalibratie;
 float drempelwaarde;
 float majorDrempelwaarde;
 float vermenigvuldigingswaarde;
@@ -78,6 +81,7 @@ void checkStanding();
 void piepjesMaker(int aantal);
 void getGyroscopeValues();
 void kalmanWaardes();
+void verplaatsingBerekenen();
 
 // ------------------------------Setup Configuration----------------------------------
 
@@ -94,7 +98,8 @@ void setup() {
 
 void loop() {
   getValues();
-  getGyroscopeValues();
+  // getGyroscopeValues();
+  verplaatsingBerekenen();
   getThresholdStatus();
   readtextfromkeyboard();
   plotterDebugCommands();
@@ -147,7 +152,7 @@ void loop() {
 // Checkt of de meetwaarde de drempelwaarde doorbreekt om van REST naar SITTING te gaan.
 bool checkThreshold() 
 {
-  if (abs(X - calibratieX) > drempelwaarde || abs(Y - calibratieY) > drempelwaarde || abs(Z - calibratieZ) > drempelwaarde) {
+  if (abs(verticalWaarde - verticalCalibratie) > drempelwaarde) {
     return true;
   }
   return false;
@@ -156,7 +161,7 @@ bool checkThreshold()
 // Doet hetzelfde als checkThreshold maar de drempelwaarde is groter om STANDING te detecteren.
 bool checkMajorEventThreshold() 
 {
-  if (abs(X - calibratieX) > majorDrempelwaarde || abs(Y - calibratieY) > majorDrempelwaarde || abs(Z - calibratieZ) > majorDrempelwaarde) {
+  if (abs(verticalWaarde - verticalCalibratie) > majorDrempelwaarde) {
     return true;
   }
   return false;
@@ -165,7 +170,7 @@ bool checkMajorEventThreshold()
 // ?
 bool checkMeetwaardeProximity() 
 {
-  if (abs(X - calibratieX) < 1 && abs(Y - calibratieY) < 1 && abs(Z - calibratieZ) < 1) {
+  if (abs(verticalWaarde - verticalCalibratie)  < 1) {
     return true;
   }
   return false;
@@ -183,9 +188,6 @@ void calibratie() {
     IMU.readAcceleration(X, Y, Z);
     maxRuisZ = max(Z, maxRuisZ);
     minRuisZ = min(Z, minRuisZ);
-    X = X * vermenigvuldigingswaarde;
-    Y = Y * vermenigvuldigingswaarde;
-    Z = Z * vermenigvuldigingswaarde;
     calibratieX += X;
     calibratieY += Y;
     calibratieZ += Z;
@@ -194,15 +196,23 @@ void calibratie() {
   calibratieX = calibratieX / 50;
   calibratieY = calibratieY / 50;
   calibratieZ = calibratieZ / 50;
+
+  // bepaling van de grootste waarde
+  Serial.print("de grootste waarde is: ");
+  if(abs(X) >= abs(Y) && abs(X) >= abs(Z)) {vertical = 0; verticalCalibratie = X; Serial.println("X");}
+  if(abs(Y) >= abs(X) && abs(Y) >= abs(Z)) {vertical = 1; verticalCalibratie = Y; Serial.println("Y");}
+  if(abs(Z) >= abs(X) && abs(Z) >= abs(Y)) {vertical = 2; verticalCalibratie = Z; Serial.println("Z");}
 }
 
 // Haalt de waardes op van de accelerometer.
 void getValues() {
  if (IMU.accelerationAvailable()) {
     IMU.readAcceleration(X, Y, Z);
-    X = X * vermenigvuldigingswaarde;
-    Y = Y * vermenigvuldigingswaarde;
-    Z = Z * vermenigvuldigingswaarde;
+    ArrayXYZ[0] = X;
+    ArrayXYZ[1] = Y;
+    ArrayXYZ[2] = Z;
+    Serial.println(ArrayXYZ[vertical]);
+    verticalWaarde = ArrayXYZ[vertical];
   }
   // Serial.print("Meetwaarde: ");
   // Serial.print(X);
@@ -222,20 +232,20 @@ void getValues() {
   // Serial.print(abs(calibratieY - Y));
   // Serial.print(" ");
   // Serial.println(abs(calibratieZ - Z));
-  // Serial.print("State: ");
-  // Serial.println(state);
+  Serial.print("State: ");
+  Serial.println(state);
 }
-void getGyroscopeValues() {
-  if (IMU.gyroscopeAvailable()) {
-    IMU.readGyroscope(gyroX, gyroY, gyroZ);
-  }
+// void getGyroscopeValues() {
+//   if (IMU.gyroscopeAvailable()) {
+//     IMU.readGyroscope(gyroX, gyroY, gyroZ);
+//   }
 //   Serial.print("Gyroscope Meetwaarde: ");
 //   Serial.print(gyroX);
 //   Serial.print(" ");
 //   Serial.print(gyroY);
 //   Serial.print(" ");
 //   Serial.println(gyroZ);
-}
+// }
 
 // Checkt of de gebruiker voor het eerst is in een case cyclus zit.
 // Alle Entries zetten en/of resetten de semaforen om te checken voor first occurence.
@@ -288,7 +298,7 @@ void readtextfromkeyboard() {
 
 // Geeft de status van de sensor weer in de plotter.
 void getThresholdStatus() {
-  stopTijd = millis();
+  // stopTijd = millis();
   // if(checkThreshold()) {
   //   time = millis();
   //   Serial.print("Above threshold: ");
@@ -428,10 +438,19 @@ void piepjesMaker(int aantal) {
 }
 
 void kalmanWaardes() {
-  float estimated_value = simpleKalmanFilter.updateEstimate(Z);
-  // Serial.print("Kalman Waardes: ");
-  Serial.print(estimated_value);
-  Serial.print(",");
-  Serial.println(Z);
-  // Serial.println("--------------------------------------");
+  // float estimated_value = simpleKalmanFilter.updateEstimate(Z);
+  // // Serial.print("Kalman Waardes: ");
+  // Serial.print(estimated_value);
+  // Serial.print(",");
+  // Serial.println(Z);
+  Serial.println("--------------------------------------");
+}
+
+void verplaatsingBerekenen() {
+float versnelling = (verticalWaarde - verticalCalibratie);
+float vt = 0 + (versnelling * 0.25);
+float verplaatsing = vt + 0.5 * (versnelling * 0.03125);
+
+Serial.println(vt);
+Serial.println(verplaatsing);
 }
