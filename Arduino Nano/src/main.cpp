@@ -456,16 +456,47 @@ void kalmanWaardes() {
 }
 
 void verplaatsingBerekenen() {
-versnelling = (verticalWaarde - verticalCalibratie);
+
+//versnelling berekenen
+
+versnelling = (verticalWaarde - verticalCalibratie)* 9.8;
+
+versnelling = simpleKalmanFilter.updateEstimate(versnelling);
+
+
+
+//variabelen vullen met de oude waardes zodat deze bewaard kunnen worden
 
 vtold = vt;
-vt = vtold + (versnelling * 0.25);
-vttotaal = vtold += vt;
 
 stold = st;
-st = (vtold * 0.25) + (versnelling * 0.03125);
+
+
+
+//de sommen
+
+vt = vtold + (versnelling * 0.025);
+
+st = (vtold * 0.025) + (versnelling * ((0.025 * 0.025) / 2));
+
+
+
+//totalen aanvullen
+
 stotaal = stold += st;
+
+vttotaal = vtold += vt;
+
+
+
+//prints
+
+// Serial.println(st);
+
+// Serial.println(stold);
+
 
 
 Serial.println(stotaal * 100);
+
 }
