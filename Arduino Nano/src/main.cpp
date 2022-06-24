@@ -459,7 +459,7 @@ void verplaatsingBerekenen() {
 
 //versnelling berekenen
 
-versnelling = (verticalWaarde - verticalCalibratie)* 9.8;
+versnelling = (verticalWaarde - verticalCalibratie) * 9.8;
 
 versnelling = simpleKalmanFilter.updateEstimate(versnelling);
 
@@ -483,9 +483,9 @@ st = (vtold * 0.025) + (versnelling * ((0.025 * 0.025) / 2));
 
 //totalen aanvullen
 
-stotaal = stold += st;
+stotaal += st;
 
-vttotaal = vtold += vt;
+vttotaal += vt;
 
 
 
@@ -498,5 +498,4 @@ vttotaal = vtold += vt;
 
 
 Serial.println(stotaal * 100);
-
 }
